@@ -1,5 +1,5 @@
 function requireAuth(req, res, next) {
-  const bcrypt = require('bcryptjs')
+  const AuthService = require('../auth/auth-service')
   const authToken = req.get('Authorization') || ''
   if(!authToken.toLowerCase().startsWith('basic')){
     return res
@@ -24,18 +24,17 @@ function requireAuth(req, res, next) {
     .where({user_name:tokenUserName})
     .first()
     .then(user =>{
-      console.log("User: ",user)
       if (!user){
         return res
         .status(401)
         .json({error:'Unauthorized request 2'})
       }
-      return bcrypt.compare(tokenPassword,user.password)
+      return AuthService.comparePasswords(tokenPassword, user.password)
       .then(passwordsMatch => {
         if(!passwordsMatch){
           return res
           .status(401)
-          .json({ error: 'Unauthorized request' })
+          .json({ error: 'Unauthorized request 3' })
         }
         req.user = user
         next()

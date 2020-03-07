@@ -237,34 +237,43 @@ function seedUsers(db, users) {
     ...user,
     password: bcrypt.hashSync(user.password, 1)
   }))
-  return db.into('blogful_users').insert(preppedUsers)
+  return db.into('thingful_users').insert(preppedUsers)
     .then(() =>
       // update the auto sequence to stay in sync
       db.raw(
-        `SELECT setval('blogful_users_id_seq', ?)`,
+        `SELECT setval('thingful_users_id_seq', ?)`,
         [users[users.length - 1].id],
       )
     )
 }
 
-function seedThingsTables(db, users, things, reviews = []) {
-  return db
-    .into('thingful_users')
-    .insert(users)
-    .then(() =>
-      db
-        .into('thingful_things')
-        .insert(things)
+function seedThingsTables(db, users, things, reviews = []){
+  return db.transaction(async trx => {
+    await seedUsers(trx,users)
+    await trx.into('thingful_articles').insert('articles')
+    await trx.raw(
+      `SELECT setVal('thingful_articles_id_seq', ?)`,
+      [articles[articles.length-1].id],
     )
-    .then(() =>
-      reviews.length && db.into('thingful_reviews').insert(reviews)
-    )
+  })
 }
 
+// function seedThingsTables(db, users, things, reviews = []) {
+//   return db
+//     .into('thingful_users')
+//     .insert(users)
+//     .then(() =>
+//       db
+//         .into('thingful_things')
+//         .insert(things)
+//     )
+//     .then(() =>
+//       reviews.length && db.into('thingful_reviews').insert(reviews)
+//     )
+// }
+
 function seedMaliciousThing(db, user, thing) {
-  return db
-    .into('thingful_users')
-    .insert([user])
+  return seedUsers(db,[user])
     .then(() =>
       db
         .into('thingful_things')
